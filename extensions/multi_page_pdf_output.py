@@ -87,9 +87,10 @@ class Multi_Page_PDF_Output(inkex.Effect):
     def pdf_merge(self, src, dst):
         if not isinstance(src, list): src = [src]
         info_file = os.path.join(self.tmp_dir, src[0]+'.info')
-        check_call(['pdftk', src[0], 'dump_data', 'output', info_file])
-        check_call(['pdftk'] + src + ['cat', 'output', dst+'.pre'])
-        check_call(['pdftk', dst+'.pre', 'update_info', info_file, 'output', dst])
+        std_opts = ['keep_first_id', 'dont_ask']
+        check_call(['pdftk', src[0], 'dump_data', 'output', info_file] + std_opts)
+        check_call(['pdftk'] + src + ['cat', 'output', dst+'.pre'] + std_opts)
+        check_call(['pdftk', dst+'.pre', 'update_info', info_file, 'output', dst] + std_opts)
 
 
 if __name__ == '__main__':   #pragma: no cover
