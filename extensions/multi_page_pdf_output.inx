@@ -1,17 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <inkscape-extension xmlns="http://www.inkscape.org/namespace/inkscape/extension">
-  <_name>Multi-page PDF export</_name>
+  <name>Multi-page PDF export</name>
   <id>com.github.wvengen.inkscape-addons.multi_page_pdf_output</id>
-  <dependency type="executable" location="extensions">multi_page_pdf_output.py</dependency>
-  <dependency type="executable" location="extensions">inkex.py</dependency>
-  <dependency type="executable">pdftk</dependency>
+  <dependency type="executable" location="inx">multi_page_pdf_output.py</dependency>
+  <dependency type="executable" location="path">pdftk</dependency>
   <output>
     <extension>.pdf</extension>
     <mimetype>application/pdf</mimetype>
-    <_filetypename>Multi-page PDF (.pdf)</_filetypename>
-    <_filetooltip>Export PDF with one page for each layer.</_filetooltip>
+    <filetypename>Portable Document Format, multiple pages (*.pdf)</filetypename>
+    <filetooltip>Export PDF with one page for each layer</filetooltip>
   </output>
   <script>
-    <command reldir="extensions" interpreter="python">multi_page_pdf_output.py</command>
+    <command location="inx" interpreter="python">multi_page_pdf_output.py</command>
   </script>
 </inkscape-extension>

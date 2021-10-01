@@ -7,7 +7,7 @@ https://github.com/wvengen/inkscape-addons
 To use a background layer for each page, name it 'background' or 'bg'.
 
 
-Copyright (c) 2014 wvengen <dev-inkscape@willem.engen.nl>
+Copyright (c) 2021 wvengen <dev-inkscape@willem.engen.nl>
 
 This program is free software: you can redistribute it and/or modify it under
 the terms of the GNU Lesser General Public License as published by the Free
@@ -25,52 +25,47 @@ import sys
 sys.path.append('/usr/share/inkscape/extensions')
 
 import os
-import inkex
 import shutil
-import tempfile
 from subprocess import check_call
 
-class Multi_Page_PDF_Output(inkex.Effect):
-    def __init__(self):
-        inkex.Effect.__init__(self)
+import inkex
+from inkex.base import TempDirMixin
 
-    def output(self):
+class Multi_Page_PDF_Output(TempDirMixin, inkex.OutputExtension):
+    def save(self, stream):
         out = open(self.output_file, 'rb')
         if os.name == 'nt':
             import msvcrt
             msvcrt.setmode(sys.stdout.fileno(), os.O_BINARY)
-        sys.stdout.write(out.read())
+        stream.write(out.read())
         out.close()
-        self.clear_tmp()
-
-    def clear_tmp(self):
-        shutil.rmtree(self.tmp_dir)
 
     def effect(self):
-        self.tmp_dir = tempfile.mkdtemp()
-        self.output_file = os.path.join(self.tmp_dir, 'output.pdf')
+        self.output_file = os.path.join(self.tempdir, 'output.pdf')
 
         bg_layers = list(self.get_layers('bg'))
         for layer in self.get_layers('page'):
             name = layer.get('id')
-            svg_file = os.path.join(self.tmp_dir, name+'.svg')
-            pdf_file = os.path.join(self.tmp_dir, name+'.pdf')
+            svg_file = os.path.join(self.tempdir, name+'.svg')
+            pdf_file = os.path.join(self.tempdir, name+'.pdf')
             self.show_layers([layer] + bg_layers)
-            self.document.write(svg_file)
+            self.original_document.write(svg_file)
             self.svg2pdf(svg_file, pdf_file)
 
-        self.pdf_merge(map(lambda l: os.path.join(self.tmp_dir, l.get('id')+'.pdf'), self.get_layers('page')), self.output_file)
+        self.pdf_merge(map(lambda l: os.path.join(self.tempdir, l.get('id')+'.pdf'), self.get_layers('page')), self.output_file)
 
     def get_layers(self, type=None):
-        layers = self.document.xpath('//svg:svg/svg:g', namespaces=inkex.NSS)
+        layers = reversed(self.svg.xpath('//svg:svg/svg:g', namespaces=inkex.NSS))
         if type == 'page':
             layers = filter(lambda l: not self.is_bg_layer(l), layers)
         elif type == 'bg':
             layers = filter(lambda l: self.is_bg_layer(l), layers)
-        return reversed(layers)
+        return layers
 
     def is_bg_layer(self, layer):
-        name = layer.get(inkex.addNS('label', 'inkscape')).lower()
+        name = layer.get(inkex.addNS('label', 'inkscape'))
+        if not name: return False
+        name = name.lower()
         return name.startswith('background') or name.startswith('bg')
 
     def show_layers(self, layers):
@@ -85,8 +80,8 @@ class Multi_Page_PDF_Output(inkex.Effect):
         return check_call(['inkscape', '--export-area-page', '--export-pdf='+dst, src])
 
     def pdf_merge(self, src, dst):
-        if not isinstance(src, list): src = [src]
-        info_file = os.path.join(self.tmp_dir, src[0]+'.info')
+        src = list(src)
+        info_file = os.path.join(self.tempdir, 'first_page.info')
         std_opts = ['keep_first_id', 'dont_ask']
         check_call(['pdftk', src[0], 'dump_data', 'output', info_file] + std_opts)
         check_call(['pdftk'] + src + ['cat', 'output', dst+'.pre'] + std_opts)
@@ -94,7 +89,6 @@ class Multi_Page_PDF_Output(inkex.Effect):
 
 
 if __name__ == '__main__':   #pragma: no cover
-  e = Multi_Page_PDF_Output()
-  e.affect()
+  Multi_Page_PDF_Output().run()
 
-# vim: expandtab shiftwidth=4 tabstop=8 softtabstop=4 encoding=utf-8 textwidth=99
+# vim: expandtab shiftwidth=4 tabstop=8 softtabstop=4 textwidth=99
